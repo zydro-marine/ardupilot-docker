@@ -4,16 +4,14 @@ import time
 from datetime import datetime
 from .simulator import SimulatorInstance
 
-logger = logging.getLogger(__name__)
-
+logger = logging.getLogger()
 
 class SitlManager:
     # Manages multiple simulator instances
     
-    def __init__(self, logger_handler):
+    def __init__(self):
         self.instances = []
         self.running = False
-        self.logger_handler = logger_handler
         self.log_dir = None
 
     def _get_shared_env(self):
@@ -37,7 +35,7 @@ class SitlManager:
         shared_env = self._get_shared_env()
         
         for instance_id in range(num_instances):
-            instance = SimulatorInstance(instance_id, shared_env, self.logger_handler, self.log_dir)
+            instance = SimulatorInstance(instance_id, shared_env, self.log_dir)
             instance.start()
             self.instances.append(instance)
             time.sleep(0.5)

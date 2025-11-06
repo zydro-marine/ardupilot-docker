@@ -1,26 +1,26 @@
 import logging
 import subprocess
 import os
+import sys
 import threading
+import logging
 
+logger = logging.getLogger()
 
 class SimulatorInstance:
     # Manages a single simulator instance (ArduPilot + mavp2p)
     
-    def __init__(self, instance_id, shared_env, logger_handler, log_dir):
+    def __init__(self, instance_id, shared_env, log_dir):
         self.instance_id = instance_id
         self.sitl_process = None
         self.mavp2p_process = None
         self.shared_env = shared_env
         self.log_dir = log_dir
-        self.instance_logger = logging.getLogger("instance_{}".format(instance_id))
-        self.instance_logger.setLevel(logging.DEBUG)
-        self.instance_logger.addHandler(logger_handler)
 
     def _forward_output(self, stream, process_name):
         for line in iter(stream.readline, ''):
             if line:
-                self.instance_logger.info("[SITL {}][{}] {}".format(self.instance_id, process_name, line.rstrip()))
+                logger.info("[SITL {}] [{}] {}".format(self.instance_id, process_name, line.rstrip()))
 
     def _build_env(self):
         env = self.shared_env.copy()
@@ -40,23 +40,41 @@ class SimulatorInstance:
         env.setdefault('MODEL', '+')
         env.setdefault('SPEEDUP', '1')
         env.setdefault('VEHICLE', 'Rover')
-        env.setdefault('SITL_UDP_OUTPUT_ADDRESS', 'udp:127.0.0.1:{}'.format(14550 + self.instance_id))
+
+        self.output_udp_address = 'udp:127.0.0.1:{}'.format(14550 + self.instance_id)
+        self.output_port = 14550 + self.instance_id
+
         env['PATH'] = "/usr/local/bin:/root/.local/bin:{}".format(os.environ.get('PATH', ''))
         
         return env
 
     def start(self):
-        self.instance_logger.info("Starting simulator instance {}".format(self.instance_id))
+        logger.info("Starting simulator instance {}".format(self.instance_id))
         
         env = self._build_env()
 
         instance_release_key = 'ARDUPILOT_INSTANCE_{}_RELEASE'.format(self.instance_id)
         release = os.environ.get(instance_release_key) or os.environ.get('ARDUPILOT_RELEASE')
         
-        if release:
-            sim_vehicle_path = '/home/ardupilot/builds/{}/Tools/autotest/sim_vehicle.py'.format(release)
-        else:
-            sim_vehicle_path = '/home/ardupilot/builds/Tools/autotest/sim_vehicle.py'
+        if not release:
+            builds_dir = '/home/ardupilot/builds'
+            if os.path.exists(builds_dir):
+                releases = [d for d in os.listdir(builds_dir) if os.path.isdir(os.path.join(builds_dir, d))]
+                if releases:
+                    releases.sort()
+                    release = releases[0]
+                    logger.info("No release specified, using first available: {}".format(release))
+                else:
+                    logger.error("No ArduPilot release found in {} and no release specified via ARDUPILOT_RELEASE or ARDUPILOT_INSTANCE_{}_RELEASE".format(builds_dir, self.instance_id))
+                    sys.exit(1)
+            else:
+                logger.error("ArduPilot builds directory {} does not exist and no release specified via ARDUPILOT_RELEASE or ARDUPILOT_INSTANCE_{}_RELEASE".format(builds_dir, self.instance_id))
+                sys.exit(1)
+        
+        sim_vehicle_path = '/home/ardupilot/builds/{}/Tools/autotest/sim_vehicle.py'.format(release)
+        if not os.path.exists(sim_vehicle_path):
+            logger.error("ArduPilot release '{}' not found at {}".format(release, sim_vehicle_path))
+            sys.exit(1)
 
         sitl_cmd = [
             sim_vehicle_path,
@@ -67,11 +85,11 @@ class SimulatorInstance:
             '--frame', env['MODEL'],
             '--no-rebuild',
             '--speedup', env['SPEEDUP'],
-            '--out', env['SITL_MAVLINK_OUTPUT_ADDRESS']
+            '--no-mavproxy',
+            '-A', "\"--serial0=udpclient:127.0.0.1:{}\"".format(self.output_port)
         ]
 
-        mavp2p_input = env['SITL_MAVLINK_OUTPUT_ADDRESS'].replace('udp:', 'udpc:')
-        mavp2p_input = env.get('MAVP2P_INPUT', 'udps:0.0.0.0:{}'.format(14550 + self.instance_id))
+        mavp2p_input = self.output_udp_address.replace('udp:', 'udpc:')
         
         instance_output_key = 'ARDUPILOT_INSTANCE_{}_MAVP2P_OUTPUT'.format(self.instance_id)
         mavp2p_output = os.environ.get(instance_output_key) or os.environ.get('ARDUPILOT_MAVP2P_OUTPUT', 'udp:127.0.0.1:{}'.format(14560 + self.instance_id))
@@ -99,7 +117,7 @@ class SimulatorInstance:
 
         threading.Thread(
             target=self._forward_output,
-            args=(self.sitl_process.stdout, 'SITL'),
+            args=(self.sitl_process.stdout, 'ardupilot'),
             daemon=True
         ).start()
         threading.Thread(
@@ -108,10 +126,10 @@ class SimulatorInstance:
             daemon=True
         ).start()
         
-        self.instance_logger.info("Simulator instance {} started".format(self.instance_id))
+        logger.info("Simulator instance {} started".format(self.instance_id))
 
     def stop(self):
-        self.instance_logger.info("Stopping simulator instance {}".format(self.instance_id))
+        logger.info("Stopping simulator instance {}".format(self.instance_id))
         processes = [p for p in [self.sitl_process, self.mavp2p_process] if p]
         for process in processes:
             process.terminate()
@@ -121,7 +139,7 @@ class SimulatorInstance:
             except subprocess.TimeoutExpired:
                 process.kill()
                 process.wait()
-        self.instance_logger.info("Simulator instance {} stopped".format(self.instance_id))
+        logger.info("Simulator instance {} stopped".format(self.instance_id))
 
     def is_running(self):
         sitl_running = self.sitl_process and self.sitl_process.poll() is None

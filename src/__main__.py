@@ -6,16 +6,13 @@ import sys
 from .sitl import SitlManager
 
 logger = logging.getLogger()
+formatter = CustomFormatter()
+logging.basicConfig(level=logging.DEBUG)
 logger.setLevel(logging.DEBUG)
-
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(CustomFormatter())
-logger.addHandler(ch)
-
+logger.handlers[0].setFormatter(formatter)
 
 if __name__ == "__main__":
-    manager = SitlManager(ch)
+    manager = SitlManager()
     
     def signal_handler(sig, frame):
         logger.info("Received shutdown signal")
