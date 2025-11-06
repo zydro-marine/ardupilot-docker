@@ -4,27 +4,24 @@ services:
     platform: linux/amd64
     restart: always
     tty: true
-    ports:
-      - 5760:5760
+    network_mode: host
     environment:
       # Number of instances to spawn
       ARDUPILOT_NUM_INSTANCES: 1
       # Parameters shared across all instances (Prefix with ARDUPILOT_)
-      ARDUPILOT_LAT: 42.3898
-      ARDUPILOT_LON: -71.1476
-      ARDUPILOT_ALT: 14
-      ARDUPILOT_DIR: 270
+      ARDUPILOT_LAT: 42.341548
+      ARDUPILOT_LON: -70.971492
+      ARDUPILOT_ALT: 0
+      ARDUPILOT_DIR: 0
       ARDUPILOT_MODEL: +
-      ARDUPILOT_SPEEDUP: 1
-      ARDUPILOT_VEHICLE: ArduCopter
-      ARDUPILOT_SITL_MAVLINK_OUTPUT_ADDRESS: udp:127.0.0.1:14550
+      ARDUPILOT_SPEEDUP: 10
+      ARDUPILOT_VEHICLE: APMrover2
       # Parameters specific to each instance (Prefix with ARDUPILOT_INSTANCE_<index>_)
-      ARDUPILOT_INSTANCE_0_LAT: 42.3898
-      ARDUPILOT_INSTANCE_0_LON: -71.1476
-      ARDUPILOT_INSTANCE_0_ALT: 14
-      ARDUPILOT_INSTANCE_0_DIR: 270
+      ARDUPILOT_INSTANCE_0_LAT: 42.341548
+      ARDUPILOT_INSTANCE_0_LON: -70.971492
+      ARDUPILOT_INSTANCE_0_ALT: 0
+      ARDUPILOT_INSTANCE_0_DIR: 0
       ARDUPILOT_INSTANCE_0_MODEL: +
-      ARDUPILOT_INSTANCE_0_SPEEDUP: 1
-      ARDUPILOT_INSTANCE_0_VEHICLE: ArduCopter
-      ARDUPILOT_INSTANCE_0_SITL_MAVLINK_OUTPUT_ADDRESS: udp:127.0.0.1:14550
+      ARDUPILOT_INSTANCE_0_SPEEDUP: 10
+      ARDUPILOT_INSTANCE_0_VEHICLE: APMrover2
   

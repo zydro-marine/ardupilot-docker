@@ -5,11 +5,20 @@ import signal
 import sys
 from .sitl import SitlManager
 
-logger = logging.getLogger()
-formatter = CustomFormatter()
-logging.basicConfig(level=logging.DEBUG)
-logger.setLevel(logging.DEBUG)
-logger.handlers[0].setFormatter(formatter)
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.DEBUG)
+
+# Remove any existing handlers to avoid duplicates
+for handler in root_logger.handlers[:]:
+    root_logger.removeHandler(handler)
+
+# Create and add a single handler with our formatter
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+ch.setFormatter(CustomFormatter())
+root_logger.addHandler(ch)
+
+logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     manager = SitlManager()

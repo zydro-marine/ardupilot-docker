@@ -46,7 +46,7 @@ RUN git clone https://github.com/ArduPilot/ardupilot.git ardupilot-${ARDUPILOT_T
 RUN cd /home/ardupilot/builds/ardupilot-${ARDUPILOT_TAG} && \
     ./waf distclean && \
     ./waf configure --board sitl && \
-    ./waf copter
+    ./waf rover
 
 # Copy the management script
 COPY ./src ./src

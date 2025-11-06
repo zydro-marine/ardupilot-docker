@@ -3,9 +3,8 @@ import subprocess
 import os
 import sys
 import threading
-import logging
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 class SimulatorInstance:
     # Manages a single simulator instance (ArduPilot + mavp2p)
@@ -39,7 +38,7 @@ class SimulatorInstance:
         env.setdefault('DIR', '0')
         env.setdefault('MODEL', '+')
         env.setdefault('SPEEDUP', '1')
-        env.setdefault('VEHICLE', 'Rover')
+        env.setdefault('VEHICLE', 'APMrover2')
 
         self.output_udp_address = 'udp:127.0.0.1:{}'.format(14550 + self.instance_id)
         self.output_port = 14550 + self.instance_id
@@ -83,18 +82,20 @@ class SimulatorInstance:
             "--custom-location={},{},{},{}".format(env['LAT'], env['LON'], env['ALT'], env['DIR']),
             '-w',
             '--frame', env['MODEL'],
-            '--no-rebuild',
             '--speedup', env['SPEEDUP'],
+            '--no-rebuild',
             '--no-mavproxy',
-            '-A', "\"--serial0=udpclient:127.0.0.1:{}\"".format(self.output_port)
         ]
 
+        mavlink_input_port = 5760 + self.instance_id
+
         mavp2p_input = self.output_udp_address.replace('udp:', 'udpc:')
+        mavp2p_udp_port = os.environ.get('ARDUPILOT_INSTANCE_{}_MAVP2P_UDP_OUTPUT_PORT'.format(self.instance_id)) or os.environ.get('ARDUPILOT_MAVP2P_UDP_OUTPUT_PORT', 5600 + self.instance_id)
+        mavp2p_tcp_port = os.environ.get('ARDUPILOT_INSTANCE_{}_MAVP2P_TCP_OUTPUT_PORT'.format(self.instance_id)) or os.environ.get('ARDUPILOT_MAVP2P_TCP_OUTPUT_PORT', 5601 + self.instance_id)
         
-        instance_output_key = 'ARDUPILOT_INSTANCE_{}_MAVP2P_OUTPUT'.format(self.instance_id)
-        mavp2p_output = os.environ.get(instance_output_key) or os.environ.get('ARDUPILOT_MAVP2P_OUTPUT', 'udp:127.0.0.1:{}'.format(14560 + self.instance_id))
-        
-        mavp2p_cmd = ['mavp2p', mavp2p_input, mavp2p_output]
+        mavp2p_cmd = ['mavp2p', 'tcpc:127.0.0.1:{}'.format(mavlink_input_port), 'udps:0.0.0.0:{}'.format(mavp2p_udp_port), 'tcps:0.0.0.0:{}'.format(mavp2p_tcp_port)]
+        logger.info("Starting mavp2p with command: {}".format(' '.join(mavp2p_cmd)))
+        logger.info("Starting sitl with command: {}".format(' '.join(sitl_cmd)))
 
         self.sitl_process = subprocess.Popen(
             sitl_cmd,

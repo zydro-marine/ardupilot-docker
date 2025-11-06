@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 from .simulator import SimulatorInstance
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 class SitlManager:
     # Manages multiple simulator instances
@@ -44,12 +44,13 @@ class SitlManager:
         logger.info("All {} SITL instances started".format(num_instances))
 
     def stop(self):
-        logger.info("Stopping {} SITL instances".format(len(self.instances)))
-        for instance in self.instances:
-            instance.stop()
-        self.instances.clear()
-        self.running = False
-        logger.info("All SITL instances stopped")
+        if self.running or len(self.instances) > 0:
+            logger.info("Stopping {} SITL instances".format(len(self.instances)))
+            for instance in self.instances:
+                instance.stop()
+            self.instances.clear()
+            self.running = False
+            logger.info("All SITL instances stopped")
 
     def is_running(self):
         return any(instance.is_running() for instance in self.instances)
