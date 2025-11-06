@@ -1,0 +1,8 @@
+services:
+  ardupilot-docker:
+    build: .
+    platform: linux/amd64
+    restart: always
+    tty: true
+    ports:
+      - 5760:5760
