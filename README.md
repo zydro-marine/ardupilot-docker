@@ -1,14 +1,13 @@
 # ardupilot-docker
 
-A Docker container for running ArduPilot Software-In-The-Loop (SITL) simulations with support for multiple simulation instances & mavp2p mavlink forwarding.
+A Docker container for running SITL testing with support for multiple simulation instances & mavp2p mavlink forwarding.
 
 ## Features
 
-- Run multiple ArduPilot SITL instances simultaneously with independent configurations
+- Run multiple ArduPilot SITL instances with independent configurations
 - Select specific ArduPilot releases per instance (e.g., `Rover-4.6.3`, `ArduCopter-4.5.0`)
 - Creates timestamped log directories for each session at `/ardupilot/logs/<timestamp>`
-- Integrated mavp2p for multiple MAVLink connections to each vehicle
-- Environment variable-based configuration with global and per-instance overrides
+- Integrated mavp2p MAVLINK forwarding
 
 ## Usage
 
@@ -21,31 +20,36 @@ docker-compose up
 ```
 
 The container will automatically:
+
+- Start ArduPilot SITL and mavp2p and forward all output to the console
 - Create a timestamped log directory at `/ardupilot/logs/<timestamp>` (e.g., `/ardupilot/logs/20241215_143022`)
-- Start ArduPilot SITL and mavp2p with the log directory as the working directory
-- Forward all output to the console with instance-specific prefixes
 
-### Environment Variables
+### Environment Variable Configuration
 
-Configuration is done through environment variables. There are two types:
+Configuration is done through environment variables.
 
-#### Global Variables (Shared Across All Instances)
+#### Manager Config
+
+These variables control the behavior of the SITL launcher.
+
+- `ARDUPILOT_NUM_INSTANCES` - Number of simulator instances to spawn (default: `1`)
+
+#### Shared Config
 
 Prefix with `ARDUPILOT_`:
 
-- `ARDUPILOT_NUM_INSTANCES` - Number of simulator instances to spawn (default: `1`)
-- `ARDUPILOT_RELEASE` - ArduPilot release tag to use (e.g., `Rover-4.6.3`). If set, uses `/ardupilot/builds/<release>/Tools/autotest/sim_vehicle.py`
-- `ARDUPILOT_VEHICLE` - Vehicle type (default: `Rover`, options: `ArduCopter`, `ArduPlane`, `Rover`, etc.)
+- `ARDUPILOT_RELEASE` - ArduPilot release tag to use (e.g., `Rover-4.6.3`).
+- `ARDUPILOT_VEHICLE` - ArduPilot vehicle type (default: `Rover`)
 - `ARDUPILOT_LAT` - Starting latitude (default: `42.3898`)
 - `ARDUPILOT_LON` - Starting longitude (default: `-71.1476`)
-- `ARDUPILOT_ALT` - Starting altitude in meters (default: `0`)
-- `ARDUPILOT_DIR` - Starting heading in degrees (default: `0`)
+- `ARDUPILOT_ALT` - Starting altitude (default: `0`)
+- `ARDUPILOT_DIR` - Starting heading (default: `0`)
 - `ARDUPILOT_MODEL` - Frame/model type (default: `+`)
 - `ARDUPILOT_SPEEDUP` - Simulation speedup factor (default: `1`)
 - `ARDUPILOT_SITL_MAVLINK_OUTPUT_ADDRESS` - MAVLink output address (default: `udp:127.0.0.1:14550` for instance 0)
 - `ARDUPILOT_MAVP2P_OUTPUT` - mavp2p output address (default: `udp:127.0.0.1:14560` for instance 0)
 
-#### Instance-Specific Variables
+#### Instance-Specific Config
 
 Prefix with `ARDUPILOT_INSTANCE_<X>_` where `<X>` is the instance ID (0, 1, 2, etc.):
 
