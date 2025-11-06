@@ -1,28 +1,127 @@
 # ardupilot-docker
 
-This project provides a containerized ArduPilot firmware intended for use in SITL testing systems which interact with ArduPilot.
+A Docker container for running ArduPilot Software-In-The-Loop (SITL) simulations with support for multiple simulation instances & mavp2p mavlink forwarding.
 
-Several features are bundled into the container on top of ArduPilot:
+## Features
 
-- Multiple ArduPilot builds are included in a single docker container
-- mavp2p, configured by default to allow multiple MAVLINK connections to the vehicle
-- Scripts to handle the lifecycle of a JSON simulation endpoint
+- Run multiple ArduPilot SITL instances simultaneously with independent configurations
+- Select specific ArduPilot releases per instance (e.g., `Rover-4.6.3`, `ArduCopter-4.5.0`)
+- Creates timestamped log directories for each session at `/ardupilot/logs/<timestamp>`
+- Integrated mavp2p for multiple MAVLink connections to each vehicle
+- Environment variable-based configuration with global and per-instance overrides
 
 ## Usage
 
-TODO
-
 ### Basic Usage
 
-TODO
+Start a single ArduPilot SITL instance using docker-compose:
 
-### JSON Simulator API
+```bash
+docker-compose up
+```
 
-TODO
+The container will automatically:
+- Create a timestamped log directory at `/ardupilot/logs/<timestamp>` (e.g., `/ardupilot/logs/20241215_143022`)
+- Start ArduPilot SITL and mavp2p with the log directory as the working directory
+- Forward all output to the console with instance-specific prefixes
+
+### Environment Variables
+
+Configuration is done through environment variables. There are two types:
+
+#### Global Variables (Shared Across All Instances)
+
+Prefix with `ARDUPILOT_`:
+
+- `ARDUPILOT_NUM_INSTANCES` - Number of simulator instances to spawn (default: `1`)
+- `ARDUPILOT_RELEASE` - ArduPilot release tag to use (e.g., `Rover-4.6.3`). If set, uses `/ardupilot/builds/<release>/Tools/autotest/sim_vehicle.py`
+- `ARDUPILOT_VEHICLE` - Vehicle type (default: `Rover`, options: `ArduCopter`, `ArduPlane`, `Rover`, etc.)
+- `ARDUPILOT_LAT` - Starting latitude (default: `42.3898`)
+- `ARDUPILOT_LON` - Starting longitude (default: `-71.1476`)
+- `ARDUPILOT_ALT` - Starting altitude in meters (default: `0`)
+- `ARDUPILOT_DIR` - Starting heading in degrees (default: `0`)
+- `ARDUPILOT_MODEL` - Frame/model type (default: `+`)
+- `ARDUPILOT_SPEEDUP` - Simulation speedup factor (default: `1`)
+- `ARDUPILOT_SITL_MAVLINK_OUTPUT_ADDRESS` - MAVLink output address (default: `udp:127.0.0.1:14550` for instance 0)
+- `ARDUPILOT_MAVP2P_OUTPUT` - mavp2p output address (default: `udp:127.0.0.1:14560` for instance 0)
+
+#### Instance-Specific Variables
+
+Prefix with `ARDUPILOT_INSTANCE_<X>_` where `<X>` is the instance ID (0, 1, 2, etc.):
+
+- `ARDUPILOT_INSTANCE_<X>_RELEASE` - ArduPilot release tag for this specific instance
+- `ARDUPILOT_INSTANCE_<X>_VEHICLE` - Vehicle type for this instance
+- `ARDUPILOT_INSTANCE_<X>_LAT` - Starting latitude for this instance
+- `ARDUPILOT_INSTANCE_<X>_LON` - Starting longitude for this instance
+- `ARDUPILOT_INSTANCE_<X>_ALT` - Starting altitude for this instance
+- `ARDUPILOT_INSTANCE_<X>_DIR` - Starting heading for this instance
+- `ARDUPILOT_INSTANCE_<X>_MODEL` - Frame/model type for this instance
+- `ARDUPILOT_INSTANCE_<X>_SPEEDUP` - Simulation speedup for this instance
+- `ARDUPILOT_INSTANCE_<X>_SITL_MAVLINK_OUTPUT_ADDRESS` - MAVLink output address for this instance
+- `ARDUPILOT_INSTANCE_<X>_MAVP2P_OUTPUT` - mavp2p output address for this instance
+
+Instance-specific variables override global variables for that instance. If not specified, instances use defaults based on their instance ID (e.g., port numbers increment: instance 0 uses port 14550, instance 1 uses 14551, etc.).
 
 ### Spinning up Multiple Instances
 
-TODO
+To run multiple simulator instances, set `ARDUPILOT_NUM_INSTANCES`:
+
+```yaml
+environment:
+  ARDUPILOT_NUM_INSTANCES: 3
+```
+
+Each instance will:
+- Use incrementing port numbers (instance 0: 14550, instance 1: 14551, etc.)
+- Have its own log output prefixed with `[SITL <id>]`
+- Can be configured independently using instance-specific environment variables
+
+Example with different configurations per instance:
+
+```yaml
+environment:
+  ARDUPILOT_NUM_INSTANCES: 2
+  ARDUPILOT_VEHICLE: ArduCopter
+  ARDUPILOT_INSTANCE_0_VEHICLE: ArduCopter
+  ARDUPILOT_INSTANCE_0_LAT: 42.3898
+  ARDUPILOT_INSTANCE_0_LON: -71.1476
+  ARDUPILOT_INSTANCE_1_VEHICLE: Rover
+  ARDUPILOT_INSTANCE_1_LAT: 42.3900
+  ARDUPILOT_INSTANCE_1_LON: -71.1478
+```
+
+### Selecting ArduPilot Release
+
+To use a specific ArduPilot release, set the `ARDUPILOT_RELEASE` environment variable:
+
+```yaml
+environment:
+  ARDUPILOT_RELEASE: Rover-4.6.3
+```
+
+This will use `/ardupilot/builds/Rover-4.6.3/Tools/autotest/sim_vehicle.py`.
+
+You can also specify different releases per instance:
+
+```yaml
+environment:
+  ARDUPILOT_NUM_INSTANCES: 2
+  ARDUPILOT_RELEASE: Rover-4.6.3
+  ARDUPILOT_INSTANCE_0_RELEASE: Rover-4.6.3
+  ARDUPILOT_INSTANCE_1_RELEASE: ArduCopter-4.5.0
+```
+
+### Log Directory
+
+The SITL Manager automatically creates a timestamped log directory at `/ardupilot/logs/<timestamp>` (format: `YYYYMMDD_HHMMSS`) when it starts. All programs (ArduPilot SITL and mavp2p) run with this directory as their working directory, so any files they create (logs, data files, etc.) will be saved there.
+
+### MAVP2P Configuration
+
+mavp2p is automatically started for each instance to allow multiple MAVLink connections. By default:
+- Input: Connects to the SITL MAVLink output
+- Output: `udp:127.0.0.1:14560` (for instance 0, incrementing for additional instances)
+
+You can customize the mavp2p output using `ARDUPILOT_MAVP2P_OUTPUT` or `ARDUPILOT_INSTANCE_<X>_MAVP2P_OUTPUT`.
 
 ## Developer Setup
 

@@ -10,7 +10,7 @@ ENV ZYDRO_IS_IN_DOCKER=true
 ENV TERM=xterm-color
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 ENV PYTHONUNBUFFERED=1
-ARG COPTER_TAG=Copter-4.5.7
+ARG ARDUPILOT_TAG=Rover-4.6.3
 
 # Install base dependencies 
 RUN apt-get update && \
@@ -22,8 +22,8 @@ RUN apt-get update && \
     git config --global url."https://github.com/".insteadOf git://github.com/
 
 # Create base folder structure
-RUN mkdir -p /home/ardupilot
-WORKDIR /home/ardupilot
+RUN mkdir -p /home/ardupilot/builds && mkdir -p /home/ardupilot/logs
+WORKDIR /home/ardupilot/builds
 
 # Install python dependencies
 COPY ./requirements.txt ./requirements.txt
@@ -37,13 +37,13 @@ RUN cd /home && \
     rm -rf mavp2p_v1.3.1_linux_amd64.tar.gz
 
 # Clone ArduPilot
-RUN git clone https://github.com/ArduPilot/ardupilot.git ardupilot-${COPTER_TAG} && \
-    cd /home/ardupilot/ardupilot-${COPTER_TAG}  && \
-    git checkout ${COPTER_TAG} && \
+RUN git clone https://github.com/ArduPilot/ardupilot.git ardupilot-${ARDUPILOT_TAG} && \
+    cd /home/ardupilot/builds/ardupilot-${ARDUPILOT_TAG}  && \
+    git checkout ${ARDUPILOT_TAG} && \
     git submodule update --init --recursive
 
 # Build ArduPilot
-RUN cd /home/ardupilot/ardupilot-${COPTER_TAG} && \
+RUN cd /home/ardupilot/builds/ardupilot-${ARDUPILOT_TAG} && \
     ./waf distclean && \
     ./waf configure --board sitl && \
     ./waf copter
