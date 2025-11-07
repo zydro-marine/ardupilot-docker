@@ -1,2 +1,10 @@
 MAVProxy
 pymavlink
+empy==3.3.4
+pexpect
+dronecan
+future
+wxtools
+wxpython
+matplotlib
+numpy==1.24.4

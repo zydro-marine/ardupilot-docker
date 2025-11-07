@@ -18,6 +18,9 @@ RUN apt-get update && \
     tzdata \
     sudo \
     lsb-release \
+    python3 \
+    python3-pip \
+    python3-wxgtk4.0 \
     git && \
     git config --global url."https://github.com/".insteadOf git://github.com/
 

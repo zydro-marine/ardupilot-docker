@@ -5,7 +5,11 @@ services:
     restart: always
     tty: true
     network_mode: host
+    volumes:
+      - ./params:/home/ardupilot/params:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
     environment:
+      DISPLAY: ${DISPLAY:-:0}
       # Number of instances to spawn
       ARDUPILOT_NUM_INSTANCES: 1
       # Parameters shared across all instances (Prefix with ARDUPILOT_)
@@ -13,15 +17,24 @@ services:
       ARDUPILOT_LON: -70.971492
       ARDUPILOT_ALT: 0
       ARDUPILOT_DIR: 0
-      ARDUPILOT_MODEL: +
       ARDUPILOT_SPEEDUP: 10
       ARDUPILOT_VEHICLE: APMrover2
+      ARDUPILOT_PARAMS_FILE: default.params
       # Parameters specific to each instance (Prefix with ARDUPILOT_INSTANCE_<index>_)
-      ARDUPILOT_INSTANCE_0_LAT: 42.341548
-      ARDUPILOT_INSTANCE_0_LON: -70.971492
-      ARDUPILOT_INSTANCE_0_ALT: 0
-      ARDUPILOT_INSTANCE_0_DIR: 0
-      ARDUPILOT_INSTANCE_0_MODEL: +
-      ARDUPILOT_INSTANCE_0_SPEEDUP: 10
-      ARDUPILOT_INSTANCE_0_VEHICLE: APMrover2
-  
+      # Grid layout: 2x2 grid with 100m spacing (50m offset from center)
+      # Instance 0: top-left
+      ARDUPILOT_INSTANCE_0_LAT: 42.341098
+      ARDUPILOT_INSTANCE_0_LON: -70.972102
+      ARDUPILOT_INSTANCE_0_PARAMS_FILE: instance1.params
+      # Instance 1: top-right
+      ARDUPILOT_INSTANCE_1_LAT: 42.341098
+      ARDUPILOT_INSTANCE_1_LON: -70.970882
+      ARDUPILOT_INSTANCE_1_PARAMS_FILE: instance2.params
+      # Instance 2: bottom-left
+      ARDUPILOT_INSTANCE_2_LAT: 42.341998
+      ARDUPILOT_INSTANCE_2_LON: -70.972102
+      ARDUPILOT_INSTANCE_2_PARAMS_FILE: instance3.params
+      # Instance 3: bottom-right
+      ARDUPILOT_INSTANCE_3_LAT: 42.341998
+      ARDUPILOT_INSTANCE_3_LON: -70.970882
+      ARDUPILOT_INSTANCE_3_PARAMS_FILE: instance3.params

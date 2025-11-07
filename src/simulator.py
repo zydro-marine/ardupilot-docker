@@ -45,12 +45,16 @@ class SimulatorInstance:
 
         env['PATH'] = "/usr/local/bin:/root/.local/bin:{}".format(os.environ.get('PATH', ''))
         
+        if 'DISPLAY' in os.environ:
+            env['DISPLAY'] = os.environ['DISPLAY']
+        
         return env
 
     def start(self):
         logger.info("Starting simulator instance {}".format(self.instance_id))
         
         env = self._build_env()
+        env['LOCALAPPDATA'] = ''
 
         instance_release_key = 'ARDUPILOT_INSTANCE_{}_RELEASE'.format(self.instance_id)
         release = os.environ.get(instance_release_key) or os.environ.get('ARDUPILOT_RELEASE')
@@ -75,23 +79,43 @@ class SimulatorInstance:
             logger.error("ArduPilot release '{}' not found at {}".format(release, sim_vehicle_path))
             sys.exit(1)
 
+        mavlink_input_port = 5760 + self.instance_id
+
         sitl_cmd = [
             sim_vehicle_path,
             '--vehicle', env['VEHICLE'],
             "-I{}".format(env['INSTANCE']),
+            "--out=tcp:127.0.0.1:{}".format(mavlink_input_port),
             "--custom-location={},{},{},{}".format(env['LAT'], env['LON'], env['ALT'], env['DIR']),
             '-w',
-            '--frame', env['MODEL'],
-            '--speedup', env['SPEEDUP'],
-            '--no-rebuild',
-            '--no-mavproxy',
         ]
 
-        mavlink_input_port = 5760 + self.instance_id
+        params_file = env.get('PARAMS_FILE')
+        if params_file:
+            if not os.path.isabs(params_file):
+                params_file = os.path.join('/home/ardupilot/params', params_file)
+            if os.path.exists(params_file):
+                sitl_cmd.append("--add-param-file={}".format(params_file))
+                logger.info("Loading parameters from: {}".format(params_file))
+            else:
+                logger.warning("Parameter file not found: {}".format(params_file))
+
+        sitl_cmd.extend([
+            '--speedup', env['SPEEDUP'],
+            '--no-rebuild',
+        ])
+
+        mavproxy_ui = env.get('MAVPROXY', '').lower()
+        if mavproxy_ui in ('true', '1', 'yes'):
+            sitl_cmd.append('--console')
+            sitl_cmd.append('--map')
+            logger.info("Enabling mavproxy console and map (will break mavlink forwarding)")
+        else:
+            sitl_cmd.append('--no-mavproxy')
 
         mavp2p_input = self.output_udp_address.replace('udp:', 'udpc:')
-        mavp2p_udp_port = os.environ.get('ARDUPILOT_INSTANCE_{}_MAVP2P_UDP_OUTPUT_PORT'.format(self.instance_id)) or os.environ.get('ARDUPILOT_MAVP2P_UDP_OUTPUT_PORT', 5600 + self.instance_id)
-        mavp2p_tcp_port = os.environ.get('ARDUPILOT_INSTANCE_{}_MAVP2P_TCP_OUTPUT_PORT'.format(self.instance_id)) or os.environ.get('ARDUPILOT_MAVP2P_TCP_OUTPUT_PORT', 5601 + self.instance_id)
+        mavp2p_udp_port = os.environ.get('ARDUPILOT_INSTANCE_{}_MAVP2P_UDP_OUTPUT_PORT'.format(self.instance_id)) or os.environ.get('ARDUPILOT_MAVP2P_UDP_OUTPUT_PORT', 5600 + self.instance_id * 10)
+        mavp2p_tcp_port = os.environ.get('ARDUPILOT_INSTANCE_{}_MAVP2P_TCP_OUTPUT_PORT'.format(self.instance_id)) or os.environ.get('ARDUPILOT_MAVP2P_TCP_OUTPUT_PORT', 5601 + self.instance_id * 10)
         
         mavp2p_cmd = ['mavp2p', 'tcpc:127.0.0.1:{}'.format(mavlink_input_port), 'udps:0.0.0.0:{}'.format(mavp2p_udp_port), 'tcps:0.0.0.0:{}'.format(mavp2p_tcp_port)]
         logger.info("Starting mavp2p with command: {}".format(' '.join(mavp2p_cmd)))
