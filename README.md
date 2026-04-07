@@ -1,15 +1,21 @@
 # ardupilot-docker
 
-A Docker container for running SITL testing of ArduPilot drones. This differs from other ArduPilot docker containers by adding a number of advanced features, including environment-varaible based configuration, multiple simulation instances & mavp2p mavlink forwarding.
+A Docker container for running SITL testing of ArduPilot drones. 
+
+This container wraps ArduPilot in a test harness which adds a number of advanced features, including environment-variable based configuration, multiple isolated simulation instances & mavp2p mavlink forwarding.
+
+> Note: The use case at Zydro Marine for this container is to test integrations _against_ ArduPilot (eg. our Mavlink interfaces & C2 software), so we've made ergonomics decisions to make it easier to spin up/down "throwaway" ArduPilot instances. If you are actively developing against ArduPilot, you are better off directly using the ArduPilot SITL system.
 
 ## Features
 
-- Run multiple ArduPilot SITL instances with independent configurations
+- Run multiple independent ArduPilot SITL instances with independent configurations from a single docker container
 - Select specific ArduPilot releases per instance (e.g., `Rover-4.6.3`, `ArduCopter-4.5.0`)
 - Creates timestamped log directories for each session at `/ardupilot/logs/<timestamp>`
-- Integrated mavp2p MAVLINK forwarding
+- Integrated mavp2p Mavlink forwarding
 
 ## Usage
+
+Configuration of the simulation is done via environment variables, set in the `docker-compose.yml` file or via flags to the Docker CLI.
 
 ### Basic Usage
 
