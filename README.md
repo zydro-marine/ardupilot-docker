@@ -1,6 +1,6 @@
 # ardupilot-docker
 
-A Docker container for running SITL testing with support for multiple simulation instances & mavp2p mavlink forwarding.
+A Docker container for running SITL testing of ArduPilot drones. This differs from other ArduPilot docker containers by adding a number of advanced features, including environment-varaible based configuration, multiple simulation instances & mavp2p mavlink forwarding.
 
 ## Features
 
