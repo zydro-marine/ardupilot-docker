@@ -1,0 +1,40 @@
+steps:
+  - wait: ~
+  - group: "build-test-x86_64"
+    steps:
+      - label: "build-docker-x86_64"
+        key: "build-docker-x86_64"
+        commands:
+          - "./scripts/dev_build.sh --docker"
+        agents:
+          queue: "self-hosted-linux-x86-64"
+      - label: "sitl-tests-x86_64"
+        key: "sitl-tests-x86_64"
+        depends_on: "build-docker-x86_64"
+        commands:
+          - "python3 -m venv --clear $$HOME/.sitl-venv"
+          - 'export PATH="$$HOME/.sitl-venv/bin:$$PATH"'
+          - "pip install 'git+ssh://git@github.com/zydro-marine/zydro-cli.git@main'"
+          - "pip install -e ./sitl/modules"
+          - "./scripts/dev_sitl_test.sh"
+        agents:
+          queue: "self-hosted-linux-x86-64"
+  - wait: ~
+  - label: "push-docker-x86_64"
+    key: "push-docker-x86_64"
+    commands:
+      - "./scripts/dev_push.sh --docker"
+    branches: "main"
+    agents:
+      queue: "self-hosted-linux-x86-64"
+  - label: "release-docker-x86_64"
+    key: "release-docker-x86_64"
+    commands:
+      - "./scripts/dev_release.sh --release --docker"
+    branches: "release/*"
+    agents:
+      queue: "self-hosted-linux-x86-64"
+
+secrets:
+  - CI_AWS_SECRET_ACCESS_KEY
+  - CI_AWS_ACCESS_KEY_ID

@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ardupilot-sitl"
+version = "0.0.1"
+description = "SITL module exposing ardupilot-docker as a stack participant."
+requires-python = ">=3.9"
+dependencies = []
+
+[tool.setuptools]
+py-modules = ["ardupilot"]
+
+[project.entry-points."sitl.modules"]
+ardupilot = "ardupilot:ArdupilotModule"
