@@ -1,0 +1,29 @@
+name: "ardupilot-multiple"
+type: "pytest"
+description: "Multi-instance ArduPilot SITL smoke test."
+
+services:
+  - name: "ardupilot1"
+    module: "ardupilot"
+    config:
+      mavlink_port: 14550
+      lat: 32.827056
+      lon: -118.560176
+  - name: "ardupilot2"
+    module: "ardupilot"
+    config:
+      mavlink_port: 14551
+      lat: 32.811498
+      lon: -118.583565
+  - name: "ardupilot3"
+    module: "ardupilot"
+    config:
+      mavlink_port: 14552
+      lat: 32.804891
+      lon: -118.539390
+  - name: "ardupilot4"
+    module: "ardupilot"
+    config:
+      mavlink_port: 14553
+      lat: 32.785521
+      lon: -118.512631

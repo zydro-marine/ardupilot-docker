@@ -1,0 +1,13 @@
+name: "ardupilot-single"
+type: "pytest"
+description: "Single-instance ArduPilot SITL smoke test."
+
+services:
+  - name: "ardupilot1"
+    module: "ardupilot"
+    config:
+      mavlink_port: 14550
+      vehicle: "APMrover2"
+      lat: 42.3898
+      lon: -71.1476
+      speedup: 10
